@@ -1,62 +1,38 @@
 <script setup lang="ts">
-const { user, logout } = useAuth()
+const route = useRoute()
+const isSidebarOpen = ref(true)
 
-const links = [
-  {
-    label: 'Dashboard',
-    icon: 'i-heroicons-home',
-    to: '/',
-  },
-  {
-    label: 'Admins',
-    icon: 'i-heroicons-user-group',
-    to: '/admins',
-  },
-  {
-    label: 'Users',
-    icon: 'i-heroicons-users',
-    to: '/users',
-  },
-  {
-    label: 'Plans',
-    icon: 'i-heroicons-currency-dollar',
-    to: '/plans',
-  },
+const navigation = [
+  { label: 'Dashboard', to: '/' },
+  { label: 'Admins', to: '/admins' },
+  { label: 'Users', to: '/users' },
+  { label: 'Plans', to: '/plans' },
 ]
+
+function toggleSidebar() {
+  isSidebarOpen.value = !isSidebarOpen.value
+}
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Sidebar -->
-    <aside class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
-      <div class="h-16 flex items-center px-6 border-b border-gray-200">
-        <h1 class="text-xl font-bold text-primary-600">Platform Admin</h1>
-      </div>
+    <Sidebar :is-open="isSidebarOpen" @toggle="toggleSidebar" />
 
-      <nav class="p-4 space-y-1">
-        <NuxtLink v-for="link in links" :key="link.to" :to="link.to"
-          class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-          active-class="bg-primary-50 text-primary-600 hover:bg-primary-50">
-          <UIcon :name="link.icon" class="w-5 h-5" />
-          <span class="font-medium">{{ link.label }}</span>
-        </NuxtLink>
-      </nav>
-    </aside>
+    <div :class="[
+      'transition-all duration-300',
+      isSidebarOpen ? 'ml-64' : 'ml-20'
+    ]">
+      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-30">
+        <div class="flex items-center gap-4">
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-bars-3" class="lg:hidden" @click="toggleSidebar" />
+          <h2 class="text-lg font-semibold text-gray-900">
+            {{navigation.find(n => n.to === route.path)?.label || 'Dashboard'}}
+          </h2>
+        </div>
 
-    <!-- Main Content -->
-    <div class="pl-64">
-      <!-- Top Navbar -->
-      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        <div></div>
-
-        <UDropdown :items="[[{ label: 'Logout', icon: 'i-heroicons-arrow-right-on-rectangle', click: logout }]]">
-          <UButton color="neutral" variant="ghost" trailing-icon="i-heroicons-chevron-down">
-            {{ user?.name }}
-          </UButton>
-        </UDropdown>
+        <UserMenu />
       </header>
 
-      <!-- Page Content -->
       <main class="p-6">
         <slot />
       </main>

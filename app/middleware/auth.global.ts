@@ -1,5 +1,5 @@
 export default defineNuxtRouteMiddleware((to) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // Public routes (accessible without auth)
   const publicRoutes = ["/login", "/forgot-password", "/reset-password"];
@@ -13,5 +13,14 @@ export default defineNuxtRouteMiddleware((to) => {
   // If not authenticated and trying to access protected route → redirect to login
   if (!isAuthenticated.value && !isPublicRoute) {
     return navigateTo("/login");
+  }
+
+  // If authenticated and must reset password → redirect to change-password
+  if (
+    isAuthenticated.value &&
+    user.value?.mustResetPassword &&
+    to.path !== "/change-password"
+  ) {
+    return navigateTo("/change-password");
   }
 });

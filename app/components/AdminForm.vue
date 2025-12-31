@@ -78,19 +78,19 @@ async function onSubmit() {
   <UForm :schema="mode === 'create' ? createAdminSchema : updateAdminSchema" :state="state" @submit="onSubmit"
     class="space-y-4">
     <UFormField label="Name" name="name" required>
-      <UInput v-model="state.name" placeholder="Enter admin name" />
+      <UInput v-model="state.name" placeholder="Enter admin name" :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <UFormField label="Email" name="email" required>
-      <UInput v-model="state.email" type="email" placeholder="admin@example.com" />
+      <UInput v-model="state.email" type="email" placeholder="admin@example.com" :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <UFormField label="Roles" name="roles" required description="Select one or more roles">
-      <USelectMenu v-model="selectedRoles" :items="roleOptions" multiple />
+      <USelectMenu v-model="selectedRoles" :items="roleOptions" multiple class="w-full" />
     </UFormField>
 
     <UFormField v-if="mode === 'create'" label="Password" name="password" required description="Minimum 8 characters">
-      <UInput v-model="state.password" type="password" placeholder="Enter password" />
+      <UInput v-model="state.password" type="password" placeholder="Enter password" :ui="{ root: 'w-full' }" />
     </UFormField>
 
     <div class="flex gap-2 justify-end pt-4">

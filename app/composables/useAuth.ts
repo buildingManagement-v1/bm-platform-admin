@@ -1,38 +1,49 @@
-import type { Admin, LoginResponse, ApiResponse } from "~/types";
+import type { User, UserType, LoginResponse, ApiResponse } from "~/types";
 
 export const useAuth = () => {
   const config = useRuntimeConfig();
   const router = useRouter();
 
-  // Store user and tokens in cookies for persistence
-  const userCookie = useCookie<Admin | null>("admin_user", {
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+  const userCookie = useCookie<User | null>("user", {
+    maxAge: 60 * 60 * 24 * 7,
   });
 
-  const user = useState<Admin | null>("user", () => userCookie.value);
-  const token = useCookie("admin_token", {
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+  const user = useState<User | null>("user", () => userCookie.value);
+  const token = useCookie("token", {
+    maxAge: 60 * 60 * 24 * 7,
   });
 
-  const refreshToken = useCookie("admin_refresh_token", {
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+  const refreshToken = useCookie("refresh_token", {
+    maxAge: 60 * 60 * 24 * 30,
+  });
+
+  const userType = useCookie<UserType | null>("user_type", {
+    maxAge: 60 * 60 * 24 * 7,
   });
 
   const login = async (email: string, password: string) => {
-    const response = await $fetch<ApiResponse<LoginResponse>>(
-      `${config.public.apiUrl}/v1/platform/auth/login`,
-      {
-        method: "POST",
-        body: { email, password },
-      }
-    );
+    try {
+      const response = await $fetch<ApiResponse<LoginResponse>>(
+        `${config.public.apiUrl}/v1/platform/auth/login`,
+        {
+          method: "POST",
+          body: { email, password },
+        }
+      );
 
-    token.value = response.data.accessToken;
-    refreshToken.value = response.data.refreshToken;
-    user.value = response.data.admin;
-    userCookie.value = response.data.admin;
+      token.value = response.data.accessToken;
+      refreshToken.value = response.data.refreshToken;
 
-    return response;
+      const userData = response.data.admin;
+      user.value = userData!;
+      userCookie.value = userData!;
+      userType.value = "admin";
+
+      return response;
+    } catch (error: any) {
+      const message = error.data?.message || error.message || "Login failed";
+      throw new Error(message);
+    }
   };
 
   const logout = () => {
@@ -40,6 +51,7 @@ export const useAuth = () => {
     refreshToken.value = null;
     user.value = null;
     userCookie.value = null;
+    userType.value = null;
     router.push("/login");
   };
 
@@ -60,15 +72,38 @@ export const useAuth = () => {
     return response.data.accessToken;
   };
 
+  const changePassword = async (oldPassword: string, newPassword: string) => {
+    try {
+      await $fetch(`${config.public.apiUrl}/v1/platform/auth/change-password`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+        body: { currentPassword: oldPassword, newPassword },
+      });
+
+      if (user.value) {
+        user.value.mustResetPassword = false;
+        userCookie.value = user.value;
+      }
+    } catch (error: any) {
+      const message =
+        error.data?.message || error.message || "Password change failed";
+      throw new Error(message);
+    }
+  };
+
   const isAuthenticated = computed(() => !!token.value);
 
   return {
     user,
+    userType,
     token,
     refreshToken,
     login,
     logout,
     refresh,
+    changePassword,
     isAuthenticated,
   };
 };

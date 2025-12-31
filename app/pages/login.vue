@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@nuxt/ui'
-import { loginSchema, type LoginSchema } from '~/schemas/auth'
-
 definePageMeta({
   layout: false,
 })
 
-const { login } = useAuth()
+const { login, user } = useAuth()
 const router = useRouter()
 const toast = useToast()
 
@@ -17,16 +14,24 @@ const state = reactive({
 
 const loading = ref(false)
 
-async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
+const handleLogin = async () => {
   loading.value = true
   try {
-    await login(event.data.email, event.data.password)
+    await login(state.email, state.password)
+
+    // Check if admin needs to reset password
+    if (user.value && 'mustResetPassword' in user.value && user.value.mustResetPassword) {
+      router.push('/change-password')
+      return
+    }
+
     toast.add({ title: 'Login successful', color: 'success' })
     router.push('/')
   } catch (error: any) {
+    const message = error.data?.message || error.message || 'Login failed'
     toast.add({
       title: 'Login failed',
-      description: error.message,
+      description: message,
       color: 'error'
     })
   } finally {
@@ -36,41 +41,36 @@ async function onSubmit(event: FormSubmitEvent<LoginSchema>) {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-gray-50">
-    <UCard class="w-full max-w-md shadow-xl">
+  <div class="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-50 to-slate-100">
+    <UCard class="w-full max-w-md">
       <template #header>
         <div class="text-center">
-          <h1 class="text-2xl font-bold text-gray-900">Platform Admin</h1>
+          <h1 class="text-2xl font-bold text-gray-900">BMS Login</h1>
           <p class="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
       </template>
 
-      <UForm :schema="loginSchema" :state="state" class="space-y-4" @submit="onSubmit">
-        <UFormField label="Email" name="email" required>
-          <UInput v-model="state.email" type="email" placeholder="admin@example.com" icon="i-heroicons-envelope"
-            size="lg" :ui="{
-              root: 'w-full'
-            }" />
+      <form @submit.prevent="handleLogin" class="space-y-4">
+        <UFormField label="Email" required>
+          <UInput v-model="state.email" type="email" placeholder="your@email.com" icon="i-heroicons-envelope" size="lg"
+            required :ui="{ root: 'w-full' }" />
         </UFormField>
 
-        <UFormField label="Password" name="password" required>
+        <UFormField label="Password" required>
           <UInput v-model="state.password" type="password" placeholder="Enter your password"
-            icon="i-heroicons-lock-closed" size="lg" :ui="{
-              root: 'w-full'
-            }" />
+            icon="i-heroicons-lock-closed" size="lg" required :ui="{ root: 'w-full' }" />
         </UFormField>
 
-        <div class="flex items-center justify-between text-sm">
-          <UCheckbox label="Remember me" />
-          <NuxtLink to="/forgot-password" class="text-primary hover:underline">
+        <div class="flex items-center justify-end text-sm">
+          <NuxtLink to="/forgot-password" class="text-primary-600 hover:text-primary-700">
             Forgot password?
           </NuxtLink>
         </div>
 
-        <UButton type="submit" color="primary" block size="lg" :loading="loading">
+        <UButton type="submit" block size="lg" :loading="loading">
           Sign In
         </UButton>
-      </UForm>
+      </form>
     </UCard>
   </div>
 </template>

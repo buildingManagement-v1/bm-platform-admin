@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { AdminRole, type Admin } from '~/types'
+
 const route = useRoute()
+const { user } = useAuth()
 
 defineProps<{
   isOpen: boolean
@@ -9,12 +12,24 @@ const emit = defineEmits<{
   toggle: []
 }>()
 
-const navigation = [
-  { label: 'Dashboard', icon: 'i-heroicons-home', to: '/' },
-  { label: 'Admins', icon: 'i-heroicons-shield-check', to: '/admins' },
-  { label: 'Users', icon: 'i-heroicons-users', to: '/users' },
-  { label: 'Plans', icon: 'i-heroicons-currency-dollar', to: '/plans' },
+const allNavigation: Array<{ label: string; icon: string; to: string; requiredRoles: AdminRole[] }> = [
+  { label: 'Dashboard', icon: 'i-heroicons-home', to: '/', requiredRoles: [] },
+  { label: 'Admins', icon: 'i-heroicons-shield-check', to: '/admins', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER] },
+  { label: 'Plans', icon: 'i-heroicons-currency-dollar', to: '/plans', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER, AdminRole.ANALYTICS_VIEWER, AdminRole.SYSTEM_MANAGER, AdminRole.BILLING_MANAGER] },
 ]
+
+const navigation = computed(() => {
+  const admin = user.value as Admin | null
+  if (!admin) return []
+
+  return allNavigation.filter(item => {
+    // Dashboard is visible to all
+    if (item.requiredRoles.length === 0) return true
+
+    // Check if user has any of the required roles
+    return item.requiredRoles.some(role => admin.roles.includes(role))
+  })
+})
 </script>
 
 <template>
@@ -25,7 +40,7 @@ const navigation = [
     <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200">
       <div v-if="isOpen" class="flex items-center gap-2">
         <UIcon name="i-heroicons-building-office-2" class="w-8 h-8 text-primary-600" />
-        <span class="text-xl font-bold text-gray-900">BMS Admin</span>
+        <span class="text-xl font-bold text-gray-900">BMS</span>
       </div>
       <UIcon v-else name="i-heroicons-building-office-2" class="w-8 h-8 text-primary-600 mx-auto" />
     </div>

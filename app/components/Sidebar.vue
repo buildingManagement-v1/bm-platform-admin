@@ -16,6 +16,7 @@ const allNavigation: Array<{ label: string; icon: string; to: string; requiredRo
   { label: 'Dashboard', icon: 'i-heroicons-home', to: '/', requiredRoles: [] },
   { label: 'Admins', icon: 'i-heroicons-shield-check', to: '/admins', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER] },
   { label: 'Plans', icon: 'i-heroicons-currency-dollar', to: '/plans', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER, AdminRole.ANALYTICS_VIEWER, AdminRole.SYSTEM_MANAGER, AdminRole.BILLING_MANAGER] },
+  { label: 'Activity Logs', icon: 'i-heroicons-clipboard-document-list', to: '/activity-logs', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.SYSTEM_MANAGER] },
 ]
 
 const navigation = computed(() => {
@@ -52,7 +53,7 @@ const navigation = computed(() => {
           ? 'bg-primary-50 text-primary-600'
           : 'text-gray-700 hover:bg-gray-100',
       ]">
-        <UIcon :name="item.icon" class="w-5 h-5 flex-shrink-0" />
+        <UIcon :name="item.icon" class="w-5 h-5 shrink-0" />
         <span v-if="isOpen" class="font-medium">{{ item.label }}</span>
       </NuxtLink>
     </nav>

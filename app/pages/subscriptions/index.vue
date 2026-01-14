@@ -71,6 +71,28 @@ function handleSuccess() {
   fetchSubscriptions()
 }
 
+async function downloadInvoice(subscriptionId: string) {
+  try {
+    const response = await api(
+      `/v1/platform/subscriptions/${subscriptionId}/download`,
+      { responseType: 'blob' }
+    )
+
+    const url = window.URL.createObjectURL(new Blob([response]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `subscription-invoice-${subscriptionId}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+
+    toast.add({ title: 'Invoice downloaded', color: 'success' })
+  } catch (error: any) {
+    toast.add({ title: 'Failed to download invoice', description: error.message, color: 'error' })
+  }
+}
+
 onMounted(() => {
   fetchSubscriptions()
 })
@@ -112,6 +134,9 @@ onMounted(() => {
 
         <template #actions-cell="{ row }">
           <div class="flex gap-2">
+            <UButton size="xs" color="neutral" variant="ghost" @click="downloadInvoice(row.original.id)">
+              <UIcon name="i-heroicons-arrow-down-tray" class="w-4 h-4" />
+            </UButton>
             <UButton v-if="row.original.status === 'active'" size="xs" color="primary" variant="ghost"
               @click="openUpgradeModal(row.original)">
               Upgrade

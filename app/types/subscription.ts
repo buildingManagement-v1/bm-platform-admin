@@ -13,8 +13,6 @@ export interface Subscription {
   id: string;
   userId: string;
   planId: string;
-  buildingCount: number;
-  managerCount: number;
   totalAmount: string;
   billingCycleStart: string;
   billingCycleEnd: string;
@@ -33,10 +31,6 @@ export interface SubscriptionHistory {
   action: SubscriptionAction;
   oldPlanId: string | null;
   newPlanId: string;
-  oldBuildingCount: number | null;
-  newBuildingCount: number;
-  oldManagerCount: number | null;
-  newManagerCount: number;
   proratedAmount: string | null;
   notes: string | null;
   createdAt: string;
@@ -47,7 +41,5 @@ export interface SubscriptionHistory {
 export interface CreateSubscriptionDto {
   userId: string;
   planId: string;
-  buildingCount: number;
-  managerCount: number;
   billingCycleStart: string;
 }

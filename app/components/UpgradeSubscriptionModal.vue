@@ -22,8 +22,6 @@ const prorating = ref<any>(null)
 
 const form = reactive({
   newPlanId: '',
-  newBuildingCount: props.subscription.buildingCount,
-  newManagerCount: props.subscription.managerCount,
 })
 
 const planOptions = computed(() =>
@@ -40,7 +38,7 @@ const selectedPlan = computed(() =>
 )
 
 const canCalculate = computed(() =>
-  form.newPlanId && form.newBuildingCount > 0
+  !!form.newPlanId
 )
 
 async function fetchPlans() {
@@ -100,7 +98,7 @@ async function confirmUpgrade() {
   }
 }
 
-watch([() => form.newPlanId, () => form.newBuildingCount, () => form.newManagerCount], () => {
+watch(() => form.newPlanId, () => {
   prorating.value = null
 })
 
@@ -115,8 +113,6 @@ onMounted(() => {
       <h3 class="text-lg font-semibold mb-2">Current Subscription</h3>
       <div class="p-4 bg-gray-50 rounded-lg space-y-1 text-sm">
         <div><span class="font-medium">Plan:</span> {{ subscription.plan?.name }}</div>
-        <div><span class="font-medium">Buildings:</span> {{ subscription.buildingCount }}</div>
-        <div><span class="font-medium">Managers:</span> {{ subscription.managerCount }}</div>
         <div><span class="font-medium">Current Cost:</span> ${{ subscription.totalAmount }}/year</div>
       </div>
     </div>
@@ -128,16 +124,9 @@ onMounted(() => {
           class="w-full" value-key="value" />
       </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Building Count *</label>
-          <UInput v-model.number="form.newBuildingCount" type="number" min="1" size="lg" class="w-full" />
-        </div>
-
-        <div class="space-y-2">
-          <label class="text-sm font-medium">Manager Count *</label>
-          <UInput v-model.number="form.newManagerCount" type="number" min="0" size="lg" class="w-full" />
-        </div>
+      <div v-if="selectedPlan" class="p-4 bg-gray-50 rounded-lg">
+        <div class="text-sm text-gray-600 mb-1">New Plan Price:</div>
+        <div class="text-xl font-bold text-gray-900">${{ selectedPlan.price }}/year</div>
       </div>
 
       <UButton v-if="!prorating" color="primary" variant="outline" block :loading="calculating"
@@ -161,7 +150,7 @@ onMounted(() => {
           <span class="text-gray-600">New Plan (Remaining Time):</span>
           <span class="font-medium">+${{ prorating.newCost }}</span>
         </div>
-        <div class="border-t pt-2 flex justify-between">
+        <div class="pt-2 flex justify-between">
           <span class="font-semibold text-gray-900">Amount to Charge:</span>
           <span class="text-xl font-bold text-blue-600">${{ prorating.proratedAmount }}</span>
         </div>
@@ -171,7 +160,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="flex justify-end gap-3 pt-4 border-t">
+    <div class="flex justify-end gap-3 pt-4">
       <UButton color="neutral" variant="ghost" @click="emit('cancel')" :disabled="loading">
         Cancel
       </UButton>

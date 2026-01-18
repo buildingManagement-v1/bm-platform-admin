@@ -3,28 +3,34 @@ export enum PlanStatus {
   INACTIVE = "inactive",
 }
 
+export enum PlanType {
+  PUBLIC = "public",
+  CUSTOM = "custom",
+}
+
 export interface PlanFeatures {
-  maxBuildings?: number;
-  maxManagers?: number;
-  maxUnits?: number;
+  maxBuildings: number;
+  maxUnits: number;
+  maxManagers: number;
+  premiumFeatures: string[];
 }
 
 export interface Plan {
   id: string;
   name: string;
-  buildingPrice: number;
-  managerPrice: number;
+  price: number;
   features: PlanFeatures;
   status: PlanStatus;
+  type: PlanType;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreatePlanInput {
   name: string;
-  buildingPrice: number;
-  managerPrice: number;
+  price: number;
   features: PlanFeatures;
+  type: PlanType;
 }
 
 export interface UpdatePlanInput extends Partial<CreatePlanInput> {

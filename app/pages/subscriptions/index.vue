@@ -15,8 +15,6 @@ const selectedSubscription = ref<Subscription | null>(null)
 const columns: TableColumn<Subscription>[] = [
   { accessorKey: 'user.name', header: 'User' },
   { accessorKey: 'plan.name', header: 'Plan' },
-  { accessorKey: 'buildingCount', header: 'Buildings' },
-  { accessorKey: 'managerCount', header: 'Managers' },
   { accessorKey: 'totalAmount', header: 'Yearly Amount' },
   { accessorKey: 'status', header: 'Status' },
   { accessorKey: 'billingCycleEnd', header: 'Expires' },
@@ -37,8 +35,6 @@ function handleUpgradeSuccess() {
 async function fetchSubscriptions() {
   loading.value = true
   try {
-    // TODO: We need an endpoint to get all subscriptions
-    // For now, this is a placeholder
     const response = await api<ApiResponse<Subscription[]>>('/v1/platform/subscriptions/all')
     subscriptions.value = response.data
   } catch (error) {

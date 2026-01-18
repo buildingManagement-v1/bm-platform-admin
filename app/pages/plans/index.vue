@@ -14,8 +14,8 @@ const selectedPlan = ref<Plan | null>(null)
 
 const columns: TableColumn<Plan>[] = [
   { accessorKey: 'name', header: 'Plan Name' },
-  { accessorKey: 'buildingPrice', header: 'Building Price (Yearly)' },
-  { accessorKey: 'managerPrice', header: 'Manager Price (Yearly)' },
+  { accessorKey: 'price', header: 'Price (Yearly)' },
+  { accessorKey: 'features', header: 'Limits' },
   { accessorKey: 'status', header: 'Status' },
   { id: 'actions', header: 'Actions' },
 ]
@@ -93,12 +93,16 @@ onMounted(() => {
 
     <UCard>
       <UTable :data="plans" :columns="columns" :loading="loading">
-        <template #buildingPrice-cell="{ row }">
-          ${{ row.original.buildingPrice }}/year
+        <template #price-cell="{ row }">
+          ${{ row.original.price }}/year
         </template>
 
-        <template #managerPrice-cell="{ row }">
-          ${{ row.original.managerPrice }}/year
+        <template #features-cell="{ row }">
+          <div class="text-sm">
+            {{ row.original.features.maxBuildings }} buildings,
+            {{ row.original.features.maxUnits }} units,
+            {{ row.original.features.maxManagers }} managers
+          </div>
         </template>
 
         <template #status-cell="{ row }">

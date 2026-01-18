@@ -21,8 +21,6 @@ const userOptions = ref<{ label: string; value: string }[]>([])
 const state = reactive({
   userId: '',
   planId: '',
-  buildingCount: 1,
-  managerCount: 0,
   billingCycleStart: new Date().toISOString().split('T')[0],
 })
 
@@ -55,13 +53,6 @@ watch(userSearchDebounced, async (newValue) => {
 const selectedPlan = computed(() =>
   plans.value.find(p => p.id === state.planId)
 )
-
-const totalAmount = computed(() => {
-  if (!selectedPlan.value) return 0
-  const buildingCost = state.buildingCount * Number(selectedPlan.value.buildingPrice)
-  const managerCost = state.managerCount * Number(selectedPlan.value.managerPrice)
-  return buildingCost + managerCost
-})
 
 const planOptions = computed(() =>
   plans.value.map(p => ({
@@ -117,27 +108,13 @@ onMounted(() => {
         value-key="value" />
     </UFormField>
 
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField label="Building Count" name="buildingCount" required>
-        <UInput v-model.number="state.buildingCount" type="number" min="1" size="lg" class="w-full" />
-      </UFormField>
-
-      <UFormField label="Manager Count" name="managerCount" required>
-        <UInput v-model.number="state.managerCount" type="number" min="0" size="lg" class="w-full" />
-      </UFormField>
-    </div>
-
     <UFormField label="Billing Cycle Start" name="billingCycleStart" required>
       <UInput v-model="state.billingCycleStart" type="date" size="lg" class="w-full" />
     </UFormField>
 
     <div v-if="selectedPlan" class="p-4 bg-gray-50 rounded-lg">
-      <div class="text-sm text-gray-600 mb-2">Calculated Yearly Amount:</div>
-      <div class="text-2xl font-bold text-gray-900">${{ totalAmount.toFixed(2) }}</div>
-      <div class="text-xs text-gray-500 mt-1">
-        ({{ state.buildingCount }} × ${{ selectedPlan.buildingPrice }}) +
-        ({{ state.managerCount }} × ${{ selectedPlan.managerPrice }})
-      </div>
+      <div class="text-sm text-gray-600 mb-2">Plan Price (Yearly):</div>
+      <div class="text-2xl font-bold text-gray-900">${{ selectedPlan.price }}</div>
     </div>
 
     <div class="flex justify-end gap-3 pt-4">

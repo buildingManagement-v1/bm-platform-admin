@@ -1,7 +1,8 @@
 import type { User, UserType, LoginResponse, ApiResponse } from "~/types";
+import { useApiBaseUrl } from "./useApiBaseUrl";
 
 export const useAuth = () => {
-  const config = useRuntimeConfig();
+  const apiBaseUrl = useApiBaseUrl();
   const router = useRouter();
 
   const userCookie = useCookie<User | null>("user", {
@@ -24,11 +25,11 @@ export const useAuth = () => {
   const login = async (email: string, password: string) => {
     try {
       const response = await $fetch<ApiResponse<LoginResponse>>(
-        `${config.public.apiUrl}/v1/platform/auth/login`,
+        `${apiBaseUrl}/v1/platform/auth/login`,
         {
           method: "POST",
           body: { email, password },
-        }
+        },
       );
 
       token.value = response.data.accessToken;
@@ -61,11 +62,11 @@ export const useAuth = () => {
     }
 
     const response = await $fetch<ApiResponse<{ accessToken: string }>>(
-      `${config.public.apiUrl}/v1/platform/auth/refresh`,
+      `${apiBaseUrl}/v1/platform/auth/refresh`,
       {
         method: "POST",
         body: { refreshToken: refreshToken.value },
-      }
+      },
     );
 
     token.value = response.data.accessToken;
@@ -74,7 +75,7 @@ export const useAuth = () => {
 
   const changePassword = async (oldPassword: string, newPassword: string) => {
     try {
-      await $fetch(`${config.public.apiUrl}/v1/platform/auth/change-password`, {
+      await $fetch(`${apiBaseUrl}/v1/platform/auth/change-password`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token.value}`,

@@ -1,6 +1,8 @@
+import { useApiBaseUrl } from "~/composables/useApiBaseUrl";
+
 export default defineNuxtPlugin(() => {
   const { refresh, logout, token } = useAuth();
-  const config = useRuntimeConfig();
+  const apiBaseUrl = useApiBaseUrl();
 
   // Track if we're currently refreshing to avoid multiple refresh calls
   let isRefreshing = false;
@@ -27,7 +29,7 @@ export default defineNuxtPlugin(() => {
         // Check if it's a 401 error from our API
         if (
           error?.response?.status === 401 &&
-          originalRequest?.includes(config.public.apiUrl) &&
+          originalRequest?.includes(apiBaseUrl) &&
           !originalRequest?.includes("/auth/login") &&
           !originalRequest?.includes("/auth/refresh")
         ) {

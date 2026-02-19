@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from '@nuxt/ui'
+import { useApiBaseUrl } from '~/composables/useApiBaseUrl'
 import { resetPasswordSchema, type ResetPasswordSchema } from '~/schemas/auth'
 
 definePageMeta({
   layout: false,
 })
 
-const config = useRuntimeConfig()
+const apiBaseUrl = useApiBaseUrl()
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
@@ -22,7 +23,7 @@ const loading = ref(false)
 async function onSubmit(event: FormSubmitEvent<ResetPasswordSchema>) {
   loading.value = true
   try {
-    await $fetch(`${config.public.apiUrl}/v1/platform/auth/reset-password`, {
+    await $fetch(`${apiBaseUrl}/v1/platform/auth/reset-password`, {
       method: 'POST',
       body: event.data,
     })

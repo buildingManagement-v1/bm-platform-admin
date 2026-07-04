@@ -18,6 +18,7 @@ const allNavigation: Array<{ label: string; icon: string; to: string; requiredRo
   { label: 'Users', icon: 'i-heroicons-users', to: '/users', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER, AdminRole.BILLING_MANAGER] },
   { label: 'Plans', icon: 'i-heroicons-currency-dollar', to: '/plans', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER, AdminRole.ANALYTICS_VIEWER, AdminRole.SYSTEM_MANAGER, AdminRole.BILLING_MANAGER] },
   { label: 'Activity Logs', icon: 'i-heroicons-clipboard-document-list', to: '/activity-logs', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.SYSTEM_MANAGER] },
+  { label: 'App Version', icon: 'i-heroicons-device-phone-mobile', to: '/app-version', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.SYSTEM_MANAGER] },
   { label: 'Subscriptions', icon: 'i-heroicons-credit-card', to: '/subscriptions', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.BILLING_MANAGER] },
 ]
 

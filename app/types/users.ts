@@ -6,6 +6,8 @@ export interface Owner {
   email: string;
   phone: string | null;
   status: UserStatus;
+  deletedAt: string | null;
+  purgeAt: string | null;
   createdAt: string;
 }
 

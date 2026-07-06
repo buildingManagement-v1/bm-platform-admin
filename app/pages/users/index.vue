@@ -11,6 +11,7 @@ const toast = useToast()
 const admin = computed(() => user.value as { roles?: string[] } | null)
 const hasRole = (role: string) => admin.value?.roles?.includes(role) ?? false
 const canToggleStatus = computed(() => hasRole(AdminRole.SUPER_ADMIN) || hasRole(AdminRole.USER_MANAGER))
+const canDeleteOwner = computed(() => hasRole(AdminRole.SUPER_ADMIN))
 const canSeeManagers = computed(() => hasRole(AdminRole.SUPER_ADMIN) || hasRole(AdminRole.USER_MANAGER))
 const canSeeTenants = computed(() => hasRole(AdminRole.SUPER_ADMIN) || hasRole(AdminRole.USER_MANAGER))
 
@@ -18,24 +19,33 @@ const canSeeTenants = computed(() => hasRole(AdminRole.SUPER_ADMIN) || hasRole(A
 type TabKey = 'owners' | 'managers' | 'tenants'
 const activeTab = ref<TabKey>('owners')
 
+// `value` is what UTabs selects/emits; without it Nuxt UI falls back to the
+// item index ("0"/"1"/"2"), which would never match TabKey. `key` is kept for
+// the content-slot checks in the template.
 const tabs = computed(() => {
-  const t = [{ key: 'owners', label: 'Owners', icon: 'i-heroicons-user-circle' }]
-  if (canSeeManagers.value) t.push({ key: 'managers', label: 'Managers', icon: 'i-heroicons-briefcase' })
-  if (canSeeTenants.value) t.push({ key: 'tenants', label: 'Tenants', icon: 'i-heroicons-home' })
+  const t = [{ key: 'owners', value: 'owners', label: 'Owners', icon: 'i-heroicons-user-circle' }]
+  if (canSeeManagers.value) t.push({ key: 'managers', value: 'managers', label: 'Managers', icon: 'i-heroicons-briefcase' })
+  if (canSeeTenants.value) t.push({ key: 'tenants', value: 'tenants', label: 'Tenants', icon: 'i-heroicons-home' })
   return t
 })
 
 // ── Shared filter state ───────────────────────────────────────────────────
 const search = ref('')
-const statusFilter = ref<'all' | 'active' | 'inactive'>('all')
+const statusFilter = ref<'all' | 'active' | 'inactive' | 'deleted'>('all')
 const currentPage = ref(1)
 const pageLimit = 20
 
-const statusOptions = [
-  { label: 'All statuses', value: 'all' },
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
-]
+const statusOptions = computed(() => {
+  const options = [
+    { label: 'All statuses', value: 'all' },
+    { label: 'Active', value: 'active' },
+    { label: 'Inactive', value: 'inactive' },
+  ]
+  if (activeTab.value === 'owners') {
+    options.push({ label: 'Pending deletion', value: 'deleted' })
+  }
+  return options
+})
 
 // Reset page on filter change
 watch([search, statusFilter, activeTab], () => { currentPage.value = 1 })
@@ -61,7 +71,8 @@ async function fetchOwners() {
   try {
     const params = new URLSearchParams()
     if (search.value) params.set('search', search.value)
-    if (statusFilter.value !== 'all') params.set('status', statusFilter.value)
+    if (statusFilter.value === 'deleted') params.set('deleted', 'true')
+    else if (statusFilter.value !== 'all') params.set('status', statusFilter.value)
     params.set('page', String(currentPage.value))
     params.set('limit', String(pageLimit))
 
@@ -87,6 +98,53 @@ async function toggleOwnerStatus(owner: Owner) {
     toast.add({ title: 'Failed to update status', color: 'error' })
   } finally {
     togglingOwnerId.value = null
+  }
+}
+
+// ── Owner deletion ────────────────────────────────────────────────────────
+const deleteTarget = ref<Owner | null>(null)
+const deleteConfirmEmail = ref('')
+const deletingOwner = ref(false)
+const restoringOwnerId = ref<string | null>(null)
+
+const deleteConfirmed = computed(
+  () => deleteTarget.value !== null && deleteConfirmEmail.value.trim() === deleteTarget.value.email,
+)
+
+function openDeleteModal(owner: Owner) {
+  deleteTarget.value = owner
+  deleteConfirmEmail.value = ''
+}
+
+function closeDeleteModal() {
+  deleteTarget.value = null
+}
+
+async function confirmDeleteOwner() {
+  if (!deleteTarget.value || !deleteConfirmed.value) return
+  deletingOwner.value = true
+  try {
+    await api(`/v1/platform/users/${deleteTarget.value.id}`, { method: 'DELETE' })
+    toast.add({ title: 'Account scheduled for deletion', description: 'It will be permanently purged after the grace period.', color: 'success' })
+    deleteTarget.value = null
+    fetchOwners()
+  } catch {
+    toast.add({ title: 'Failed to delete owner', color: 'error' })
+  } finally {
+    deletingOwner.value = false
+  }
+}
+
+async function restoreOwner(owner: Owner) {
+  restoringOwnerId.value = owner.id
+  try {
+    await api(`/v1/platform/users/${owner.id}/restore`, { method: 'POST' })
+    toast.add({ title: 'Account restored', color: 'success' })
+    fetchOwners()
+  } catch {
+    toast.add({ title: 'Failed to restore owner', color: 'error' })
+  } finally {
+    restoringOwnerId.value = null
   }
 }
 
@@ -273,7 +331,14 @@ const currentTotalPages = computed(() => {
                 <span class="text-gray-500">{{ row.original.phone ?? '—' }}</span>
               </template>
               <template #status-cell="{ row }">
+                <div v-if="row.original.deletedAt">
+                  <UBadge color="error" variant="subtle">pending deletion</UBadge>
+                  <p v-if="row.original.purgeAt" class="text-xs text-gray-400 mt-1">
+                    purges {{ formatDate(row.original.purgeAt) }}
+                  </p>
+                </div>
                 <UBadge
+                  v-else
                   :color="row.original.status === 'active' ? 'success' : 'neutral'"
                   variant="subtle"
                 >
@@ -284,16 +349,41 @@ const currentTotalPages = computed(() => {
                 {{ formatDate(row.original.createdAt) }}
               </template>
               <template #actions-cell="{ row }">
-                <UButton
-                  v-if="canToggleStatus"
-                  size="xs"
-                  :color="row.original.status === 'active' ? 'error' : 'success'"
-                  variant="ghost"
-                  :loading="togglingOwnerId === row.original.id"
-                  @click="toggleOwnerStatus(row.original)"
-                >
-                  {{ row.original.status === 'active' ? 'Deactivate' : 'Activate' }}
-                </UButton>
+                <template v-if="row.original.deletedAt">
+                  <UButton
+                    v-if="canDeleteOwner"
+                    size="xs"
+                    color="success"
+                    variant="ghost"
+                    icon="i-heroicons-arrow-uturn-left"
+                    :loading="restoringOwnerId === row.original.id"
+                    @click="restoreOwner(row.original)"
+                  >
+                    Restore
+                  </UButton>
+                </template>
+                <div v-else class="flex items-center gap-1">
+                  <UButton
+                    v-if="canToggleStatus"
+                    size="xs"
+                    :color="row.original.status === 'active' ? 'error' : 'success'"
+                    variant="ghost"
+                    :loading="togglingOwnerId === row.original.id"
+                    @click="toggleOwnerStatus(row.original)"
+                  >
+                    {{ row.original.status === 'active' ? 'Deactivate' : 'Activate' }}
+                  </UButton>
+                  <UButton
+                    v-if="canDeleteOwner"
+                    size="xs"
+                    color="error"
+                    variant="ghost"
+                    icon="i-heroicons-trash"
+                    @click="openDeleteModal(row.original)"
+                  >
+                    Delete
+                  </UButton>
+                </div>
               </template>
             </UTable>
           </UCard>
@@ -405,5 +495,51 @@ const currentTotalPages = computed(() => {
         </div>
       </template>
     </UTabs>
+
+    <!-- Delete owner confirmation modal -->
+    <UModal :open="deleteTarget !== null" @update:open="(v: boolean) => { if (!v) closeDeleteModal() }">
+      <template #content>
+        <UCard v-if="deleteTarget">
+          <template #header>
+            <h3 class="text-lg font-semibold text-gray-900">Delete owner account</h3>
+          </template>
+
+          <div class="space-y-4">
+            <UAlert
+              color="error"
+              variant="subtle"
+              icon="i-heroicons-exclamation-triangle"
+              title="This deletes everything the owner manages"
+              description="All buildings, units, tenants, leases, payments and managers under this account will be scheduled for deletion. The account is recoverable during the grace period, after which it is permanently purged."
+            />
+            <p class="text-sm text-gray-600">
+              To confirm, type the owner's email
+              <span class="font-semibold text-gray-900">{{ deleteTarget.email }}</span> below:
+            </p>
+            <UInput
+              v-model="deleteConfirmEmail"
+              placeholder="owner email"
+              class="w-full"
+            />
+          </div>
+
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton color="neutral" variant="ghost" @click="closeDeleteModal">
+                Cancel
+              </UButton>
+              <UButton
+                color="error"
+                :disabled="!deleteConfirmed"
+                :loading="deletingOwner"
+                @click="confirmDeleteOwner"
+              >
+                Schedule deletion
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
   </div>
 </template>

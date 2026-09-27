@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorMessage } from '~/types/api'
 import type { TableColumn } from '@nuxt/ui'
 import type { Plan } from '~/types/plan'
 import type { ApiResponse } from '~/types/api'
@@ -26,7 +27,7 @@ async function fetchPlans() {
     const response = await api<ApiResponse<Plan[]>>('/v1/platform/plans')
     plans.value = response.data
   } catch (error) {
-    toast.add({ title: 'Failed to fetch plans', color: 'error' })
+    toast.add({ title: 'Failed to fetch plans', description: errorMessage(error), color: 'error' })
   } finally {
     loading.value = false
   }
@@ -51,7 +52,7 @@ async function toggleStatus(plan: Plan) {
     toast.add({ title: 'Plan status updated', color: 'success' })
     fetchPlans()
   } catch (error) {
-    toast.add({ title: 'Failed to update status', color: 'error' })
+    toast.add({ title: 'Failed to update status', description: errorMessage(error), color: 'error' })
   }
 }
 
@@ -63,7 +64,7 @@ async function deletePlan(id: string) {
     toast.add({ title: 'Plan deleted successfully', color: 'success' })
     fetchPlans()
   } catch (error) {
-    toast.add({ title: 'Failed to delete plan', color: 'error' })
+    toast.add({ title: 'Failed to delete plan', description: errorMessage(error), color: 'error' })
   }
 }
 
@@ -94,7 +95,7 @@ onMounted(() => {
     <UCard>
       <UTable :data="plans" :columns="columns" :loading="loading">
         <template #price-cell="{ row }">
-          ${{ row.original.price }}/year
+          ETB {{ Number(row.original.price).toLocaleString() }}/year
         </template>
 
         <template #features-cell="{ row }">

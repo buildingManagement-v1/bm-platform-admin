@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorMessage } from '~/types/api'
 import type { Subscription } from '~/types/subscription'
 import type { Plan } from '~/types/plan'
 import type { ApiResponse } from '~/types/api'
@@ -18,7 +19,15 @@ const toast = useToast()
 const loading = ref(false)
 const calculating = ref(false)
 const plans = ref<Plan[]>([])
-const prorating = ref<any>(null)
+const prorating = ref<{
+  oldTotal: number
+  oldUnused: number
+  newTotal: number
+  newCost: number
+  proratedAmount: number
+  daysRemaining: number
+  totalDays: number
+} | null>(null)
 
 const form = reactive({
   newPlanId: '',
@@ -46,7 +55,7 @@ async function fetchPlans() {
     const response = await api<ApiResponse<Plan[]>>('/v1/platform/plans')
     plans.value = response.data.filter(p => p.status === 'active')
   } catch (error) {
-    toast.add({ title: 'Failed to fetch plans', color: 'error' })
+    toast.add({ title: 'Failed to fetch plans', description: errorMessage(error), color: 'error' })
   }
 }
 
@@ -57,7 +66,7 @@ async function calculateProrating() {
   prorating.value = null
 
   try {
-    const response = await api<ApiResponse<any>>(`/v1/platform/subscriptions/${props.subscription.id}/calculate-upgrade`, {
+    const response = await api<ApiResponse<NonNullable<typeof prorating.value>>>(`/v1/platform/subscriptions/${props.subscription.id}/calculate-upgrade`, {
       method: 'POST',
       body: form,
     })
@@ -81,15 +90,15 @@ async function confirmUpgrade() {
 
   loading.value = true
   try {
-    await api(`/v1/platform/subscriptions/${props.subscription.id}/upgrade`, {
+    const res = await api<ApiResponse<unknown>>(`/v1/platform/subscriptions/${props.subscription.id}/upgrade`, {
       method: 'POST',
       body: form,
     })
-    toast.add({ title: 'Subscription upgraded successfully', color: 'success' })
+    toast.add({ title: res.message ?? 'Plan changed', color: 'success' })
     emit('success')
   } catch (error: any) {
     toast.add({
-      title: 'Failed to upgrade',
+      title: 'Failed to change plan',
       description: error.message,
       color: 'error'
     })
@@ -113,7 +122,7 @@ onMounted(() => {
       <h3 class="text-lg font-semibold mb-2">Current Subscription</h3>
       <div class="p-4 bg-gray-50 rounded-lg space-y-1 text-sm">
         <div><span class="font-medium">Plan:</span> {{ subscription.plan?.name }}</div>
-        <div><span class="font-medium">Current Cost:</span> ${{ subscription.totalAmount }}/year</div>
+        <div><span class="font-medium">Current Cost:</span> ETB {{ Number(subscription.totalAmount).toLocaleString() }}/year</div>
       </div>
     </div>
 
@@ -126,7 +135,7 @@ onMounted(() => {
 
       <div v-if="selectedPlan" class="p-4 bg-gray-50 rounded-lg">
         <div class="text-sm text-gray-600 mb-1">New Plan Price:</div>
-        <div class="text-xl font-bold text-gray-900">${{ selectedPlan.price }}/year</div>
+        <div class="text-xl font-bold text-gray-900">ETB {{ Number(selectedPlan.price).toLocaleString() }}/year</div>
       </div>
 
       <UButton v-if="!prorating" color="primary" variant="outline" block :loading="calculating"
@@ -144,18 +153,18 @@ onMounted(() => {
         </div>
         <div class="flex justify-between">
           <span class="text-gray-600">Current Plan (Unused):</span>
-          <span class="font-medium text-green-600">-${{ prorating.oldUnused }}</span>
+          <span class="font-medium text-green-600">- ETB {{ Number(prorating.oldUnused).toLocaleString() }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-gray-600">New Plan (Remaining Time):</span>
-          <span class="font-medium">+${{ prorating.newCost }}</span>
+          <span class="font-medium">+ ETB {{ Number(prorating.newCost).toLocaleString() }}</span>
         </div>
         <div class="pt-2 flex justify-between">
           <span class="font-semibold text-gray-900">Amount to Charge:</span>
-          <span class="text-xl font-bold text-blue-600">${{ prorating.proratedAmount }}</span>
+          <span class="text-xl font-bold text-blue-600">ETB {{ Number(prorating.proratedAmount).toLocaleString() }}</span>
         </div>
         <div class="text-xs text-gray-500 mt-2">
-          New yearly total: ${{ prorating.newTotal }}/year
+          New yearly total: ETB {{ Number(prorating.newTotal).toLocaleString() }}/year
         </div>
       </div>
     </div>
@@ -165,7 +174,7 @@ onMounted(() => {
         Cancel
       </UButton>
       <UButton color="primary" :loading="loading" :disabled="!canCalculate" @click="confirmUpgrade">
-        {{ prorating ? 'Confirm Upgrade' : 'Calculate & Upgrade' }}
+        {{ prorating ? 'Confirm change' : 'Calculate & change plan' }}
       </UButton>
     </div>
   </div>

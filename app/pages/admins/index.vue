@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorMessage } from '~/types/api'
 import type { TableColumn } from '@nuxt/ui'
 import type { Admin } from '~/types'
 import type { ApiResponse } from '~/types'
@@ -43,7 +44,7 @@ async function fetchAdmins() {
     const response = await api<ApiResponse<Admin[]>>('/v1/platform/auth/admins')
     admins.value = response.data
   } catch (error) {
-    toast.add({ title: 'Failed to fetch admins', color: 'error' })
+    toast.add({ title: 'Failed to fetch admins', description: errorMessage(error), color: 'error' })
   } finally {
     loading.value = false
   }
@@ -58,11 +59,11 @@ async function deleteAdmin(id: string) {
   if (!confirm('Are you sure you want to delete this admin?')) return
 
   try {
-    await api(`/v1/platform/admins/${id}`, { method: 'DELETE' })
+    await api(`/v1/platform/auth/admins/${id}`, { method: 'DELETE' })
     toast.add({ title: 'Admin deleted successfully', color: 'success' })
     fetchAdmins()
   } catch (error) {
-    toast.add({ title: 'Failed to delete admin', color: 'error' })
+    toast.add({ title: 'Failed to delete admin', description: errorMessage(error), color: 'error' })
   }
 }
 
@@ -94,7 +95,7 @@ onMounted(() => {
         <p class="text-gray-600 mt-1">Manage platform administrators and their roles</p>
       </div>
 
-      <UButton color="primary" icon="i-heroicons-plus" @click="isCreateModalOpen = true">
+      <UButton color="primary" icon="i-heroicons-plus" @click="() => { isCreateModalOpen = true }">
         Create Admin
       </UButton>
     </div>

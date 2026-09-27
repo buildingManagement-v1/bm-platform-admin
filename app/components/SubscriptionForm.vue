@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorMessage } from '~/types/api'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { refDebounced } from '@vueuse/core'
 import { subscriptionSchema, type SubscriptionSchema } from '~/schemas/subscriptions'
@@ -22,6 +23,8 @@ const state = reactive({
   userId: '',
   planId: '',
   billingCycleStart: new Date().toISOString().split('T')[0],
+  durationMonths: 12,
+  notes: '',
 })
 
 // User search with debounce
@@ -37,13 +40,13 @@ watch(userSearchDebounced, async (newValue) => {
 
   searchingUsers.value = true
   try {
-    const response = await api<ApiResponse<any[]>>(`/v1/platform/users?search=${encodeURIComponent(newValue)}`)
+    const response = await api<ApiResponse<Array<{ id: string; name: string; email: string }>>>(`/v1/platform/users?search=${encodeURIComponent(newValue)}`)
     userOptions.value = response.data.map(u => ({
       label: `${u.name} (${u.email})`,
       value: u.id
     }))
   } catch (error) {
-    toast.add({ title: 'Failed to search users', color: 'error' })
+    toast.add({ title: 'Failed to search users', description: errorMessage(error), color: 'error' })
     userOptions.value = []
   } finally {
     searchingUsers.value = false
@@ -66,23 +69,23 @@ async function fetchPlans() {
     const response = await api<ApiResponse<Plan[]>>('/v1/platform/plans')
     plans.value = response.data.filter(p => p.status === 'active')
   } catch (error) {
-    toast.add({ title: 'Failed to fetch plans', color: 'error' })
+    toast.add({ title: 'Failed to fetch plans', description: errorMessage(error), color: 'error' })
   }
 }
 
 async function onSubmit(event: FormSubmitEvent<SubscriptionSchema>) {
   loading.value = true
   try {
-    await api('/v1/platform/subscriptions', {
+    const res = await api<ApiResponse<unknown>>('/v1/platform/subscriptions', {
       method: 'POST',
-      body: event.data,
+      body: { ...event.data, notes: event.data.notes || undefined },
     })
-    toast.add({ title: 'Subscription assigned successfully', color: 'success' })
+    toast.add({ title: res.message ?? 'Subscription assigned', color: 'success' })
     emit('success')
-  } catch (error: any) {
+  } catch (error) {
     toast.add({
       title: 'Failed to assign subscription',
-      description: error.message,
+      description: errorMessage(error),
       color: 'error'
     })
   } finally {
@@ -108,13 +111,22 @@ onMounted(() => {
         value-key="value" />
     </UFormField>
 
-    <UFormField label="Billing Cycle Start" name="billingCycleStart" required>
-      <UInput v-model="state.billingCycleStart" type="date" size="lg" class="w-full" />
+    <div class="grid grid-cols-2 gap-4">
+      <UFormField label="Cycle start" name="billingCycleStart" required>
+        <UInput v-model="state.billingCycleStart" type="date" size="lg" class="w-full" />
+      </UFormField>
+      <UFormField label="Length (months)" name="durationMonths" required>
+        <UInput v-model.number="state.durationMonths" type="number" min="1" max="36" size="lg" class="w-full" />
+      </UFormField>
+    </div>
+
+    <UFormField label="Notes" name="notes" hint="e.g. how it was paid">
+      <UInput v-model="state.notes" size="lg" class="w-full" />
     </UFormField>
 
-    <div v-if="selectedPlan" class="p-4 bg-gray-50 rounded-lg">
-      <div class="text-sm text-gray-600 mb-2">Plan Price (Yearly):</div>
-      <div class="text-2xl font-bold text-gray-900">${{ selectedPlan.price }}</div>
+    <div v-if="selectedPlan" class="p-4 bg-gray-50 rounded-lg text-sm text-gray-600 space-y-1">
+      <div>Plan price (yearly): <span class="font-bold text-gray-900">ETB {{ Number(selectedPlan.price).toLocaleString() }}</span></div>
+      <div>An owner on the free trial is moved to this plan. Owners with a paid plan use "Change plan" instead.</div>
     </div>
 
     <div class="flex justify-end gap-3 pt-4">

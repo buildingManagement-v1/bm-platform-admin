@@ -22,6 +22,8 @@ export interface Subscription {
   updatedAt: string;
   plan?: Plan;
   history?: SubscriptionHistory[];
+  /** Owner, attached by the admin list endpoint */
+  user?: { id: string; name: string; email: string; deletedAt: string | null } | null;
 }
 
 export interface SubscriptionHistory {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { errorMessage } from '~/types/api'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { appVersionSchema, type AppVersionSchema } from '~/schemas/app-version'
 import type { AppVersionConfig } from '~/types/app-version'
@@ -36,7 +37,7 @@ async function fetchConfig() {
     const response = await api<ApiResponse<AppVersionConfig>>('/v1/platform/app-version')
     applyConfig(response.data)
   } catch (error) {
-    toast.add({ title: 'Failed to fetch app version config', color: 'error' })
+    toast.add({ title: 'Failed to fetch app version config', description: errorMessage(error), color: 'error' })
   } finally {
     loading.value = false
   }
@@ -52,7 +53,7 @@ async function onSubmit(event: FormSubmitEvent<AppVersionSchema>) {
     applyConfig(response.data)
     toast.add({ title: 'App version config updated successfully', color: 'success' })
   } catch (error) {
-    toast.add({ title: 'Failed to update app version config', color: 'error' })
+    toast.add({ title: 'Failed to update app version config', description: errorMessage(error), color: 'error' })
   } finally {
     saving.value = false
   }

@@ -56,6 +56,9 @@ const ownerTotal = ref(0)
 const ownerTotalPages = ref(1)
 const loadingOwners = ref(false)
 const togglingOwnerId = ref<string | null>(null)
+const createOwnerOpen = ref(false)
+const ownerDetailOpen = ref(false)
+const ownerDetailId = ref<string | null>(null)
 
 const ownerColumns: TableColumn<Owner>[] = [
   { accessorKey: 'name', header: 'Name' },
@@ -289,10 +292,18 @@ const currentTotalPages = computed(() => {
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">Users</h1>
-      <p class="text-gray-600 mt-1">View and manage all platform users</p>
+    <div class="flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Users</h1>
+        <p class="text-gray-600 mt-1">View and manage all platform users</p>
+      </div>
+      <UButton v-if="canToggleStatus" color="primary" icon="i-heroicons-user-plus" @click="() => { createOwnerOpen = true }">
+        Add owner
+      </UButton>
     </div>
+
+    <OwnerCreateModal v-model:open="createOwnerOpen" @created="fetchOwners" />
+    <OwnerDetail v-model:open="ownerDetailOpen" :owner-id="ownerDetailId" />
 
     <!-- Tabs -->
     <UTabs
@@ -363,6 +374,10 @@ const currentTotalPages = computed(() => {
                   </UButton>
                 </template>
                 <div v-else class="flex items-center gap-1">
+                  <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-eye"
+                    @click="() => { ownerDetailId = row.original.id; ownerDetailOpen = true }">
+                    View
+                  </UButton>
                   <UButton
                     v-if="canToggleStatus"
                     size="xs"

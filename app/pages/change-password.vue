@@ -82,7 +82,7 @@ const handleChangePassword = async () => {
           {{ isFirstTime ? 'Set Password' : 'Change Password' }}
         </UButton>
 
-        <UButton v-if="!isFirstTime" color="neutral" variant="ghost" block @click="router.push('/')">
+        <UButton v-if="!isFirstTime" color="neutral" variant="ghost" block @click="() => { router.push('/') }">
           Cancel
         </UButton>
       </UForm>

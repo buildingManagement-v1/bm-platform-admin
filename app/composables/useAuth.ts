@@ -74,13 +74,20 @@ export const useAuth = () => {
 
   const changePassword = async (oldPassword: string, newPassword: string) => {
     try {
-      await $fetch(`${config.public.apiUrl}/v1/platform/auth/change-password`, {
+      // Other sessions are revoked by the change; keep this one signed in
+      const response = await $fetch<
+        ApiResponse<{ accessToken: string; refreshToken: string }>
+      >(`${config.public.apiUrl}/v1/platform/auth/change-password`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token.value}`,
         },
         body: { currentPassword: oldPassword, newPassword },
       });
+      if (response.data?.accessToken) {
+        token.value = response.data.accessToken;
+        refreshToken.value = response.data.refreshToken;
+      }
 
       if (user.value) {
         user.value.mustResetPassword = false;

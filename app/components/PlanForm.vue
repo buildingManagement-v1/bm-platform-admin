@@ -3,6 +3,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { planSchema, type PlanSchema } from '~/schemas/plans'
 import type { Plan } from '~/types/plan';
 import { PlanType } from '~/types/plan';
+import { errorMessage } from '~/types/api'
 
 const props = defineProps<{
   plan?: Plan
@@ -69,6 +70,7 @@ async function onSubmit(event: FormSubmitEvent<PlanSchema>) {
   } catch (error) {
     toast.add({
       title: `Failed to ${props.mode} plan`,
+      description: errorMessage(error),
       color: 'error'
     })
   } finally {
@@ -87,7 +89,7 @@ async function onSubmit(event: FormSubmitEvent<PlanSchema>) {
       <UFormField label="Price (Yearly)" name="price" required>
         <UInput v-model.number="state.price" type="number" placeholder="0" size="lg" :ui="{ root: 'w-full' }">
           <template #leading>
-            <span class="text-gray-500">$</span>
+            <span class="text-gray-500">ETB</span>
           </template>
         </UInput>
       </UFormField>

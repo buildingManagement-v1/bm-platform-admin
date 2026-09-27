@@ -2,12 +2,21 @@
 const route = useRoute()
 const isSidebarOpen = ref(true)
 
-const navigation = [
-  { label: 'Dashboard', to: '/' },
-  { label: 'Admins', to: '/admins' },
-  { label: 'Users', to: '/users' },
-  { label: 'Plans', to: '/plans' },
-]
+const titles: Record<string, string> = {
+  '/': 'Dashboard',
+  '/admins': 'Admins',
+  '/users': 'Users',
+  '/plans': 'Plans',
+  '/activity-logs': 'Activity Logs',
+  '/app-version': 'App Version',
+  '/subscriptions': 'Subscriptions',
+  '/billing': 'Plan Requests',
+  '/adverts': 'Login Adverts',
+  '/broadcasts': 'Broadcasts',
+  '/settings': 'Settings',
+  '/change-password': 'Change Password',
+}
+const pageTitle = computed(() => titles[route.path.replace(/\/$/, '') || '/'] ?? 'Dashboard')
 
 function toggleSidebar() {
   isSidebarOpen.value = !isSidebarOpen.value
@@ -26,7 +35,7 @@ function toggleSidebar() {
         <div class="flex items-center gap-4">
           <UButton color="neutral" variant="ghost" icon="i-heroicons-bars-3" class="lg:hidden" @click="toggleSidebar" />
           <h2 class="text-lg font-semibold text-gray-900">
-            {{navigation.find(n => n.to === route.path)?.label || 'Dashboard'}}
+            {{ pageTitle }}
           </h2>
         </div>
 

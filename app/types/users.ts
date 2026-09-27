@@ -49,3 +49,41 @@ export interface PaginatedUsersResponse<T> {
   limit: number;
   totalPages: number;
 }
+
+export interface CreateOwnerInput {
+  name: string;
+  email: string;
+  phone?: string;
+}
+
+export interface OwnerDetail {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  status: UserStatus;
+  mustResetPassword: boolean;
+  lastLoginAt: string | null;
+  deletedAt: string | null;
+  createdAt: string;
+  subscription: import("./subscription").Subscription | null;
+  subscriptionHistory: import("./subscription").Subscription[];
+  requests: Array<import("./billing").SubscriptionRequest>;
+  usage: {
+    buildings: number;
+    managers: number;
+    maxUnitsInABuilding: number;
+    limits: import("./plan").PlanFeatures | null;
+  };
+  buildings: Array<{
+    id: string;
+    name: string;
+    city: string | null;
+    createdAt: string;
+    units: number;
+    occupiedUnits: number;
+    occupancyRate: number;
+    activeTenants: number;
+    activeLeases: number;
+  }>;
+}

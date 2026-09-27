@@ -24,7 +24,8 @@ export const useApi = () => {
         }
       }
 
-      const message = error.data?.message || error.message || "Request failed";
+      const raw = error.data?.message;
+      const message = Array.isArray(raw) ? raw.join(". ") : raw || error.message || "Request failed";
       throw new Error(message);
     }
   };

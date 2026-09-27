@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { TableColumn } from '@nuxt/ui'
-import type { PlatformActivityLog, ActivityAction, ActivityEntityType } from '~/types/activity-log'
-import type { ApiResponse } from '~/types'
+import { ActivityEntityType, type PlatformActivityLog, type ActivityAction } from '~/types/activity-log'
+import type { PageInfo, PaginatedResponse } from '~/types'
+import { errorMessage } from '~/types/api'
+
+function formatEntityType(type: string) {
+  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
 
 const { api } = useApi()
 const toast = useToast()
@@ -23,8 +28,7 @@ const actionOptions = [
 
 const entityTypeOptions = [
   { value: '', label: 'All Types' },
-  { value: 'subscription_plan', label: 'Subscription Plan' },
-  { value: 'platform_admin', label: 'Platform Admin' },
+  ...Object.values(ActivityEntityType).map(value => ({ value, label: formatEntityType(value) })),
 ]
 
 const columns: TableColumn<PlatformActivityLog>[] = [
@@ -49,21 +53,28 @@ const selectedEntityOption = computed({
   }
 })
 
+const search = ref('')
+const page = ref(1)
+const limit = 50
+const pageInfo = ref<PageInfo | null>(null)
+
 async function fetchLogs() {
   loading.value = true
   try {
-    const params = new URLSearchParams()
+    const params = new URLSearchParams({ limit: String(limit), offset: String((page.value - 1) * limit) })
+    if (search.value.trim()) params.append('q', search.value.trim())
     if (startDate.value) params.append('startDate', startDate.value)
     if (endDate.value) params.append('endDate', endDate.value)
     if (selectedEntityType.value) params.append('entityType', selectedEntityType.value)
     if (selectedAction.value) params.append('action', selectedAction.value)
 
-    const response = await api<ApiResponse<PlatformActivityLog[]>>(
+    const response = await api<PaginatedResponse<PlatformActivityLog[]>>(
       `/v1/platform/activity-logs?${params.toString()}`
     )
     logs.value = response.data
-  } catch (error: any) {
-    toast.add({ title: 'Failed to fetch activity logs', description: error.message, color: 'error' })
+    pageInfo.value = response.meta.page_info
+  } catch (error) {
+    toast.add({ title: 'Failed to fetch activity logs', description: errorMessage(error), color: 'error' })
   } finally {
     loading.value = false
   }
@@ -73,8 +84,21 @@ function formatDate(dateString: string) {
   return new Date(dateString).toLocaleString()
 }
 
-function formatEntityType(type: string) {
-  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+/** Readable "key: value" pairs for the details column */
+function detailEntries(details: Record<string, unknown> | null) {
+  if (!details) return []
+  return Object.entries(details)
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => ({
+      key: k.replace(/([A-Z])/g, ' $1').toLowerCase(),
+      value: typeof v === 'object' ? JSON.stringify(v) : String(v),
+    }))
+}
+
+function applyFilters() {
+  page.value = 1
+  fetchLogs()
 }
 
 function getActionColor(action: string) {
@@ -82,6 +106,7 @@ function getActionColor(action: string) {
     case 'create': return 'success'
     case 'update': return 'primary'
     case 'delete': return 'error'
+    case 'status_change': return 'warning'
     default: return 'neutral'
   }
 }
@@ -103,7 +128,10 @@ onMounted(() => {
         <h3 class="text-lg font-semibold">Filters</h3>
       </template>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <UFormField label="Search">
+          <UInput v-model="search" placeholder="Admin name or record id" @keyup.enter="applyFilters" />
+        </UFormField>
         <UFormField label="Start Date">
           <UInput v-model="startDate" type="date" />
         </UFormField>
@@ -122,7 +150,7 @@ onMounted(() => {
       </div>
 
       <div class="flex justify-end mt-4">
-        <UButton @click="fetchLogs" :loading="loading">Apply Filters</UButton>
+        <UButton :loading="loading" @click="applyFilters">Apply Filters</UButton>
       </div>
     </UCard>
 
@@ -147,8 +175,10 @@ onMounted(() => {
         </template>
 
         <template #details-cell="{ row }">
-          <div v-if="row.original.details" class="text-sm text-gray-600 max-w-xs truncate">
-            {{ JSON.stringify(row.original.details) }}
+          <div v-if="detailEntries(row.original.details).length" class="text-xs text-gray-600 max-w-md space-y-0.5">
+            <div v-for="d in detailEntries(row.original.details)" :key="d.key" class="truncate" :title="d.value">
+              <span class="text-gray-400">{{ d.key }}:</span> {{ d.value }}
+            </div>
           </div>
           <span v-else class="text-gray-400">-</span>
         </template>
@@ -161,6 +191,10 @@ onMounted(() => {
           </div>
         </template>
       </UTable>
+      <div v-if="pageInfo && pageInfo.total_pages > 1" class="flex items-center justify-between mt-4 text-sm text-gray-500">
+        <span>{{ pageInfo.total_count }} entries</span>
+        <UPagination v-model:page="page" :total="pageInfo.total_count" :items-per-page="limit" @update:page="fetchLogs" />
+      </div>
     </UCard>
   </div>
 </template>

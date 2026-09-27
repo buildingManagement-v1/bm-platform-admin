@@ -6,8 +6,17 @@ export enum ActivityAction {
 }
 
 export enum ActivityEntityType {
+  USER = "user",
+  MANAGER = "manager",
+  TENANT = "tenant",
   SUBSCRIPTION_PLAN = "subscription_plan",
+  SUBSCRIPTION = "subscription",
+  SUBSCRIPTION_REQUEST = "subscription_request",
   PLATFORM_ADMIN = "platform_admin",
+  PLATFORM_SETTING = "platform_setting",
+  LOGIN_ADVERT = "login_advert",
+  BROADCAST = "broadcast",
+  APP_VERSION_CONFIG = "app_version_config",
 }
 
 export interface PlatformActivityLog {
@@ -17,6 +26,6 @@ export interface PlatformActivityLog {
   entityId: string;
   adminId: string;
   adminName: string;
-  details: Record<string, any> | null;
+  details: Record<string, unknown> | null;
   createdAt: string;
 }

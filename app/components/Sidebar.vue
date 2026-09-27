@@ -16,10 +16,14 @@ const allNavigation: Array<{ label: string; icon: string; to: string; requiredRo
   { label: 'Dashboard', icon: 'i-heroicons-home', to: '/', requiredRoles: [] },
   { label: 'Admins', icon: 'i-heroicons-shield-check', to: '/admins', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER] },
   { label: 'Users', icon: 'i-heroicons-users', to: '/users', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER, AdminRole.BILLING_MANAGER] },
-  { label: 'Plans', icon: 'i-heroicons-currency-dollar', to: '/plans', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER, AdminRole.ANALYTICS_VIEWER, AdminRole.SYSTEM_MANAGER, AdminRole.BILLING_MANAGER] },
+  { label: 'Plans', icon: 'i-heroicons-rectangle-stack', to: '/plans', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.USER_MANAGER, AdminRole.ANALYTICS_VIEWER, AdminRole.SYSTEM_MANAGER, AdminRole.BILLING_MANAGER] },
   { label: 'Activity Logs', icon: 'i-heroicons-clipboard-document-list', to: '/activity-logs', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.SYSTEM_MANAGER] },
   { label: 'App Version', icon: 'i-heroicons-device-phone-mobile', to: '/app-version', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.SYSTEM_MANAGER] },
   { label: 'Subscriptions', icon: 'i-heroicons-credit-card', to: '/subscriptions', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.BILLING_MANAGER] },
+  { label: 'Plan Requests', icon: 'i-heroicons-banknotes', to: '/billing', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.BILLING_MANAGER] },
+  { label: 'Login Adverts', icon: 'i-heroicons-photo', to: '/adverts', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.SYSTEM_MANAGER] },
+  { label: 'Broadcasts', icon: 'i-heroicons-megaphone', to: '/broadcasts', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.SYSTEM_MANAGER] },
+  { label: 'Settings', icon: 'i-heroicons-cog-6-tooth', to: '/settings', requiredRoles: [AdminRole.SUPER_ADMIN, AdminRole.BILLING_MANAGER, AdminRole.SYSTEM_MANAGER] },
 ]
 
 const navigation = computed(() => {
